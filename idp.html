@@ -1,0 +1,79 @@
+<script>
+window.onload = function init() {
+  function errorInput(input, message) {
+    var label = document.querySelector('label[for='+input.id+']');
+    var errorDiv = document.createElement('div');
+    errorDiv.classList.add('error');
+    errorDiv.setAttribute('for', input.id);
+    errorDiv.textContent = message;
+    input.classList.add('error');
+    input.parentNode.appendChild(errorDiv);
+  }
+  function resetInput(input) {
+    var errorDiv = input.parentNode.querySelector('div.error');
+    if (errorDiv) {
+      input.parentNode.removeChild(errorDiv);
+      input.classList.remove('error');
+    }
+  }
+  function value(input) {
+    if (input.value === '' || input.value === undefined) {
+      errorInput(input, 'Needs a value');
+    }
+    return input.value;
+  }
+  function crtToString(input) {
+    try {
+      var file = input.files[0];
+      var cert = (new FileReader()).readAsText(file);
+      return cert
+        .replace(/[\s\S]+BEGIN CERTIFICATE-+([\s\S]+)-+END CERTIFICATE-+/, '$1')
+        .replace(/\r?\n|\r/g, '');
+    } catch(e) {
+      errorInput(input, 'Needs to be a certificate file');
+    }
+  }
+  function checkToBool(input) {
+    return input.checked;
+  }
+  var conversions = {
+    'idpEntityId': value,
+    'singleSignOnServiceUrl': value,
+    'idpPublicCert': crtToString,
+    'useExactComparisonTypeInSamlAuthnRequest': checkToBool
+  };
+  var newrunBtn = document.getElementById('newrun');
+  var outputDiv = document.getElementById('output');
+  newrunBtn.addEventListener('click', function getParams() {
+    var inputs = document.getElementById('params').getElementsByTagName('input');
+    var formHasErrors = false;
+    var params = {};
+    for (var input of inputs) {
+      resetInput(input);
+      params[input.id] = conversions[input.id](input);
+      formHasErrors = formHasErrors || input.classList.contains('error');
+    }
+  });
+};
+</script>
+<form id=params>
+  <fieldset>
+    <label for=idpEntityId>Entity ID</label>
+    <input id=idpEntityId>
+  </fieldset>
+  <fieldset>
+    <label for=singleSignOnServiceUrl>SSO URL</label>
+    <input id=singleSignOnServiceUrl>
+  </fieldset>
+  <fieldset>
+    <label for=idpPublicCert>Public Signing Certificate</label>
+    <input id=idpPublicCert type=file>
+  </fieldset>
+  <fieldset>
+    <label for=useExactComparisonTypeInSamlAuthnRequest>Use Exact Comparison</label>
+    <input id=useExactComparisonTypeInSamlAuthnRequest type=checkbox>
+  </fieldset>
+</form>
+<button id=newrun>Start New Test Run</button>
+<div id=output>
+</div>
